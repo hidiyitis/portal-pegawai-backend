@@ -1,0 +1,89 @@
+package handler
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
+	"github.com/hidiyitis/portal-pegawai/internal/core/usecase"
+)
+
+type UserHandler struct {
+	userUsecase usecase.UserUsecase
+}
+
+func NewUserHandler(userUsecase usecase.UserUsecase) *UserHandler {
+	return &UserHandler{userUsecase: userUsecase}
+}
+
+func (h *UserHandler) CreateUser(c *gin.Context) {
+	var user domain.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := h.userUsecase.CreateUser(&user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated,
+		gin.H{
+			"data":    user,
+			"message": "user created successfully",
+		})
+}
+
+func (h *UserHandler) GetUserByNIP(c *gin.Context) {
+	nip := c.Param("nip")
+	if nip == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid ID"})
+		return
+	}
+	u64, _ := strconv.ParseUint(nip, 10, 64)
+	user, err := h.userUsecase.GetUserByNIP(uint(u64))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK,
+		gin.H{
+			"data":    user,
+			"message": "success find user",
+		})
+}
+
+func (h *UserHandler) LoginUser(c *gin.Context) {
+	type LoginUser struct {
+		Nip      string `json:"nip" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	loginUser := LoginUser{}
+	var user domain.User
+	if err := c.ShouldBindJSON(&loginUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	nip, _ := strconv.ParseUint(loginUser.Nip, 10, 64)
+	user = domain.User{
+		NIP:      uint(nip),
+		Password: loginUser.Password,
+	}
+	accessToken, refreshToken, expiredAt, err := h.userUsecase.LoginUser(&user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"user":                    user,
+			"access_token":            accessToken,
+			"refresh_token":           refreshToken,
+			"access_token_expired_at": expiredAt,
+		},
+		"message": "login successful",
+	})
+}
