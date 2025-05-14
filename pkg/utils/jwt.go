@@ -9,6 +9,7 @@ import (
 	"github.com/hidiyitis/portal-pegawai/pkg/utils/constants"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -76,13 +77,26 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "token is empty",
 			})
+			c.Abort()
+			return
 		}
+
+		if len(strings.Split(tokenString, " ")) != 2 {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "invalid token format",
+			})
+			c.Abort()
+			return
+		}
+
+		tokenString = strings.Split(tokenString, " ")[1]
 		claims, err := VerifyToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": err.Error(),
 			})
 		}
+		println(claims)
 		c.Set("user", claims.User)
 		c.Next()
 	}

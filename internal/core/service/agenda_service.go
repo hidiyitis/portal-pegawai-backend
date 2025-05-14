@@ -25,7 +25,7 @@ func (s *AgendaService) CreateAgenda(payload *domain.InputAgendaRequest) (*domai
 		Description: payload.Description,
 		Date:        date,
 		Location:    payload.Location,
-		CreatedBy:   10012500004,
+		CreatedBy:   payload.CreatedBy,
 	}
 
 	result, err := s.repoAgenda.CreateAgenda(agenda, payload.Participants)

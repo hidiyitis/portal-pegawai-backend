@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
-
 	"gorm.io/gorm"
 )
 

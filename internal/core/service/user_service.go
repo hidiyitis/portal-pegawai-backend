@@ -1,9 +1,13 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hidiyitis/portal-pegawai/internal/infrastructure/storage"
 	"github.com/hidiyitis/portal-pegawai/pkg/utils"
+	"mime/multipart"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -15,12 +19,13 @@ import (
 )
 
 type UserService struct {
-	repo repository.UserRepository
-	mu   sync.Mutex
+	repo       repository.UserRepository
+	gcpStorage storage.GCPStorage
+	mu         sync.Mutex
 }
 
-func NewUserService(repo repository.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo repository.UserRepository, gcpStorage storage.GCPStorage) *UserService {
+	return &UserService{repo: repo, gcpStorage: gcpStorage}
 }
 
 func (s *UserService) GenerateNIP(departmentId uint) (string, error) {
@@ -87,4 +92,66 @@ func (s *UserService) LoginUser(user *domain.User) (string, string, string, erro
 		return "", "", "", errors.New("failed to generate refresh token")
 	}
 	return token, refreshToken, expiredAt, nil
+}
+
+func (s *UserService) UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (string, error) {
+	if fileHeader == nil {
+		return "", fmt.Errorf("fileHeader is nil")
+	}
+	user, err := s.repo.FindByNIP(user.NIP)
+	if err != nil {
+		return "", err
+	}
+	if err := validateFile(true, fileHeader); err != nil {
+		return "", fmt.Errorf("file validation failed: %w", err)
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			return
+		}
+	}(file)
+
+	publicURL, err := s.gcpStorage.UploadFile(
+		ctx,
+		"portal-pegawai-images",
+		file,
+		fileHeader.Filename,
+	)
+	if err != nil {
+		return "", fmt.Errorf("upload failed: %w", err)
+	}
+
+	user.PhotoUrl = publicURL
+
+	err = s.repo.Update(user)
+	if err != nil {
+		return "", err
+	}
+
+	return publicURL, nil
+}
+
+func validateFile(isImage bool, fileHeader *multipart.FileHeader) error {
+	const maxFileSize = 5 << 20 // 5MB
+	if fileHeader.Size > maxFileSize {
+		return fmt.Errorf("file too large, max size is %dMB", maxFileSize>>20)
+	}
+
+	allowedExts := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+	}
+	ext := filepath.Ext(fileHeader.Filename)
+	if !allowedExts[ext] && isImage {
+		return fmt.Errorf("unsupported file type, allowed: jpg, jpeg, png")
+	}
+
+	return nil
 }

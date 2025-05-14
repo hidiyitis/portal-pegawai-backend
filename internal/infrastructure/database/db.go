@@ -2,9 +2,8 @@ package database
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
+	"os"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -32,7 +31,6 @@ func NewDB() *gorm.DB {
 		panic("failed to connect database")
 	}
 	println("Connected to database")
-	_ = db.AutoMigrate(&domain.Department{}, &domain.User{}, &domain.Agenda{}, &domain.Participant{})
-
+	_ = db.AutoMigrate(&domain.Department{}, &domain.User{}, &domain.Agenda{}, &domain.Participant{}, &domain.LeaveRequest{}, &domain.Holiday{}, &domain.Attendance{})
 	return db
 }

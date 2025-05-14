@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"context"
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"github.com/hidiyitis/portal-pegawai/internal/core/service"
 	"github.com/hidiyitis/portal-pegawai/internal/repository"
+	"mime/multipart"
 )
 
 type UserUsecase interface {
@@ -12,11 +14,16 @@ type UserUsecase interface {
 	GetUserByNIP(nip uint) (*domain.User, error)
 	UpdateUser(user *domain.User) error
 	LoginUser(user *domain.User) (string, string, string, error)
+	UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (string, error)
 }
 
 type userUsecase struct {
 	repo    repository.UserRepository
 	service *service.UserService
+}
+
+func (u *userUsecase) UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (string, error) {
+	return u.service.UploadAvatar(ctx, user, fileHeader)
 }
 
 // CreateUser implements UserUsecase.

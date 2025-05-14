@@ -25,6 +25,12 @@ func (h *AgendaHandler) CreateAgenda(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+	user, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+	}
+
+	agenda.CreatedBy = user.(domain.User).NIP
 
 	result, err := h.agendaUsecase.CreateAgenda(agenda)
 	if err != nil {

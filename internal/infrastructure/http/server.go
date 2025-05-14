@@ -1,7 +1,10 @@
 package http
 
 import (
+	"context"
 	"fmt"
+	"github.com/hidiyitis/portal-pegawai/internal/infrastructure/storage"
+	"github.com/hidiyitis/portal-pegawai/pkg/utils"
 	"net/http"
 	"os"
 
@@ -14,24 +17,35 @@ import (
 )
 
 func StartServer() {
+
+	ctx := context.Background()
 	db := database.NewDB()
+	gcpStorage, err := storage.NewGCPStorage(ctx, "")
+	if err != nil {
+		panic(err)
+	}
 
 	// Repo
 	userRepo := repository.NewUserRepository(db)
 	agendaRepo := repository.NewAgendaRepository(db)
 	leaveRequestRepo := repository.NewLeaveRequestRepository(db)
+	holidayRepo := repository.NewHolidayRepository(db)
+	attendanceRepo := repository.NewAttendanceRepository(db)
 	// Service
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, gcpStorage)
 	agendaService := service.NewAgendaService(agendaRepo, userRepo)
-	leaveRequestService := service.NewLeaveRequestService(leaveRequestRepo)
+	leaveRequestService := service.NewLeaveRequestService(leaveRequestRepo, userRepo, holidayRepo, gcpStorage)
+	attendanceService := service.NewAttendanceService(attendanceRepo, gcpStorage)
 	// Usecase
 	userUsecase := usecase.NewUserUsecase(userRepo, userService)
 	agendaUsecase := usecase.NewAgendaUsecase(agendaRepo, agendaService)
 	leaveRequestUsecase := usecase.NewLeaveRequestUsecase(leaveRequestRepo, leaveRequestService)
+	attendanceUsecase := usecase.NewAttendanceUsecase(attendanceRepo, attendanceService)
 	// Handler
 	userHandler := handler.NewUserHandler(userUsecase)
 	agendaHandler := handler.NewAgendaHandler(agendaUsecase)
 	leaveRequestHandler := handler.NewLeaveRequestHandler(leaveRequestUsecase)
+	attendanceHandler := handler.NewAttendanceHandler(attendanceUsecase)
 
 	PORT := os.Getenv("PORT")
 	r := gin.Default()
@@ -45,14 +59,20 @@ func StartServer() {
 
 	v1.POST("/users", userHandler.CreateUser)
 	v1.POST("/auth/login", userHandler.LoginUser)
-	v1.GET("/users/:nip", userHandler.GetUserByNIP)
+	v1.GET("/users/:nip", utils.AuthMiddleware(), userHandler.GetUserByNIP)
+	v1.PUT("/users/upload-avatar", utils.AuthMiddleware(), userHandler.UploadAvatar)
 
-	v1.POST("/agendas", agendaHandler.CreateAgenda)
-	v1.GET("/agendas/:id", agendaHandler.GetAgendaByID)
-	v1.PUT("/agendas/:id", agendaHandler.UpdateAgenda)
-	v1.GET("/agendas", agendaHandler.GetAgendaByDate)
-	v1.DELETE("/agendas/:id", agendaHandler.DeleteAgendaByID)
+	v1.POST("/agendas", utils.AuthMiddleware(), agendaHandler.CreateAgenda)
+	v1.GET("/agendas/:id", utils.AuthMiddleware(), agendaHandler.GetAgendaByID)
+	v1.PUT("/agendas/:id", utils.AuthMiddleware(), agendaHandler.UpdateAgenda)
+	v1.GET("/agendas", utils.AuthMiddleware(), agendaHandler.GetAgendaByDate)
+	v1.DELETE("/agendas/:id", utils.AuthMiddleware(), agendaHandler.DeleteAgendaByID)
 
-	v1.POST("/leave-request", leaveRequestHandler.CreateLeaveRequest)
+	v1.POST("/leave-request", utils.AuthMiddleware(), leaveRequestHandler.CreateLeaveRequest)
+	v1.GET("/leave-request", utils.AuthMiddleware(), leaveRequestHandler.GetLeaveRequest)
+	v1.GET("/dashboard-leave-request", utils.AuthMiddleware(), leaveRequestHandler.GetDashboardLeaveRequest)
+	v1.PUT("/leave-request/:id", utils.AuthMiddleware(), leaveRequestHandler.UpdateLeaveRequest)
+
+	v1.POST("/attandance", utils.AuthMiddleware(), attendanceHandler.CreateAttendance)
 	r.Run(fmt.Sprintf(":%v", PORT))
 }

@@ -5,16 +5,31 @@ import (
 	"gorm.io/gorm"
 )
 
+type StatusCount struct {
+	Status domain.Status
+	Count  int64
+}
+
 type LeaveRequestRepository interface {
 	CreateLeaveRequest(leaveRequest *domain.LeaveRequest) (*domain.LeaveRequest, error)
 	GetLeaveRequestByID(id uint) (*domain.LeaveRequest, error)
 	UpdateLeaveRequest(id uint, leaveRequest *domain.LeaveRequest) (*domain.LeaveRequest, error)
-	GetLeaveRequests(nip uint) ([]*domain.LeaveRequest, error)
+	GetLeaveRequests(nip uint, status string) ([]*domain.LeaveRequest, error)
 	GetLeaveApprovals(managerNIP uint) ([]*domain.LeaveRequest, error)
+	CountLeaveRequestByStatus(nip uint, status domain.Status) (int64, error)
 }
 
 type leaveRequestRepository struct {
 	db *gorm.DB
+}
+
+func (l leaveRequestRepository) CountLeaveRequestByStatus(nip uint, status domain.Status) (int64, error) {
+	var count int64
+	err := l.db.Model(&domain.LeaveRequest{}).Where("user_nip = ? AND status = ?", nip, status).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (l leaveRequestRepository) CreateLeaveRequest(leaveRequest *domain.LeaveRequest) (*domain.LeaveRequest, error) {
@@ -27,21 +42,25 @@ func (l leaveRequestRepository) CreateLeaveRequest(leaveRequest *domain.LeaveReq
 
 func (l leaveRequestRepository) GetLeaveRequestByID(id uint) (*domain.LeaveRequest, error) {
 	leaveRequest := &domain.LeaveRequest{}
-	if err := l.db.Where("id = ?", id).First(leaveRequest).Error; err != nil {
+	if err := l.db.Where("leave_id = ?", id).First(leaveRequest).Error; err != nil {
 		return nil, err
 	}
 	return leaveRequest, nil
 }
 
 func (l leaveRequestRepository) UpdateLeaveRequest(id uint, leaveRequest *domain.LeaveRequest) (*domain.LeaveRequest, error) {
-	if err := l.db.Where("id = ?", id).Updates(leaveRequest).Error; err != nil {
+	if err := l.db.Where("leave_id = ?", id).Updates(leaveRequest).Error; err != nil {
 		return nil, err
 	}
 	return leaveRequest, nil
 }
 
-func (l leaveRequestRepository) GetLeaveRequests(nip uint) ([]*domain.LeaveRequest, error) {
+func (l leaveRequestRepository) GetLeaveRequests(nip uint, status string) ([]*domain.LeaveRequest, error) {
 	var leaveRequests []*domain.LeaveRequest
+	if status != "" {
+		l.db.Where("user_nip = ? AND status = ?", nip, status).Find(&leaveRequests)
+		return leaveRequests, nil
+	}
 	l.db.Where("user_nip = ?", nip).Find(&leaveRequests)
 	return leaveRequests, nil
 }

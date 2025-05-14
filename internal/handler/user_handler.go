@@ -87,3 +87,31 @@ func (h *UserHandler) LoginUser(c *gin.Context) {
 		"message": "login successful",
 	})
 }
+
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	fileHeader, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	user, isExist := c.Get("user")
+	if !isExist {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		return
+	}
+
+	userObj := user.(domain.User)
+	publicURL, err := h.userUsecase.UploadAvatar(c.Request.Context(), &userObj, fileHeader)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "File uploaded successfully",
+		"data": gin.H{
+			"url": publicURL,
+		},
+	})
+
+}

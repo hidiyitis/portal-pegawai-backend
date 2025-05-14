@@ -12,7 +12,6 @@ type User struct {
 	DepartmentID uint       `json:"department_id" gorm:"not null"`
 	Department   Department `json:"department" gorm:"foreignKey:DepartmentID; references department(id)"`
 	IsActive     bool       `json:"is_active" gorm:"not null default true"`
-	Agendas      []Agenda   `json:"-" gorm:"many2many:participants;foreignKey:NIP;joinForeignKey:UserNIP;references:AgendaID;joinReferences:AgendaID"`
 	CreatedAt    time.Time  `json:"created_at" gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"default:CURRENT_TIMESTAMP"`
 }

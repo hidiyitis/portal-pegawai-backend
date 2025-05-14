@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"gorm.io/gorm"
 	"time"
@@ -41,6 +42,10 @@ func (a agendaRepository) CreateAgenda(agenda *domain.Agenda, participants []uin
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 		return nil, err
+	}
+
+	if err := a.db.Preload("Creator").First(agenda, agenda.AgendaID).Error; err != nil {
+		return nil, fmt.Errorf("failed to reload agenda: %w", err)
 	}
 	return agenda, nil
 }

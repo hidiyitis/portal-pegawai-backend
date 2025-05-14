@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"github.com/hidiyitis/portal-pegawai/internal/core/service"
 	"github.com/hidiyitis/portal-pegawai/internal/repository"
@@ -8,7 +9,7 @@ import (
 )
 
 type AttendanceUsecase interface {
-	CreateAttendance(attendance domain.InputAttendance, file multipart.File, header *multipart.FileHeader) (*domain.Attendance, error)
+	CreateAttendance(ctx context.Context, attendance domain.InputAttendance, fileHeader *multipart.FileHeader) (*domain.Attendance, error)
 }
 
 type attendanceUsecase struct {
@@ -16,8 +17,8 @@ type attendanceUsecase struct {
 	service *service.AttendanceService
 }
 
-func (a attendanceUsecase) CreateAttendance(attendance domain.InputAttendance, file multipart.File, header *multipart.FileHeader) (*domain.Attendance, error) {
-	return a.service.CreateAttendance(attendance, file, header)
+func (a attendanceUsecase) CreateAttendance(ctx context.Context, attendance domain.InputAttendance, fileHeader *multipart.FileHeader) (*domain.Attendance, error) {
+	return a.service.CreateAttendance(ctx, attendance, fileHeader)
 }
 
 func NewAttendanceUsecase(repo repository.AttendanceRepository, service *service.AttendanceService) AttendanceUsecase {
