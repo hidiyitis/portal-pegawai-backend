@@ -89,9 +89,9 @@ func (a agendaRepository) UpdateAgenda(agenda *domain.Agenda, participants []uin
 
 func (a agendaRepository) GetAgendaByDate(nip uint, date time.Time) ([]domain.Agenda, error) {
 	var agenda []domain.Agenda
-	err := a.db.Joins("JOIN participants ON participants.agenda_id = agendas.agenda_id").
-		Where("date = ? AND participants.user_n_ip = ?", date, nip).
-		Find(&agenda).Order("date ASC").Error
+	err := a.db.Preload("Participants").Preload("Creator").Joins("JOIN participants ON participants.agenda_id = agendas.agenda_id").
+		Where("DATE(date) = ? AND participants.user_n_ip = ?  AND date > ?", date.Format(time.DateOnly), nip, time.Now().UTC()).
+		Order("date ASC").Find(&agenda).Error
 	if err != nil {
 		return nil, err
 	}

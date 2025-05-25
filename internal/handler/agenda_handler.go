@@ -112,13 +112,6 @@ func (h *AgendaHandler) GetAgendaByDate(c *gin.Context) {
 		return
 	}
 	result, _ := h.agendaUsecase.GetAgendaByDate(uint(nip), parseDate)
-	if len(result) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"data":    nil,
-			"message": "agenda not found",
-		})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"data":    result,
 		"message": "agenda found successfully",

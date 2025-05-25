@@ -3,11 +3,10 @@ package database
 import (
 	"fmt"
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
-	"os"
-
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"os"
 )
 
 func NewDB() *gorm.DB {

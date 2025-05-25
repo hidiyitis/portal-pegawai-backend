@@ -16,17 +16,18 @@ func NewAgendaService(repoAgenda repository.AgendaRepository, repoUser repositor
 }
 
 func (s *AgendaService) CreateAgenda(payload *domain.InputAgendaRequest) (*domain.Agenda, error) {
-	date, err := time.Parse(time.RFC3339, payload.Date)
+	parseDate, err := time.Parse(time.RFC3339, payload.Date)
 	if err != nil {
 		return nil, err
 	}
 	agenda := &domain.Agenda{
 		Title:       payload.Title,
 		Description: payload.Description,
-		Date:        date,
+		Date:        parseDate,
 		Location:    payload.Location,
 		CreatedBy:   payload.CreatedBy,
 	}
+	payload.Participants = append(payload.Participants, payload.CreatedBy)
 
 	result, err := s.repoAgenda.CreateAgenda(agenda, payload.Participants)
 	if err != nil {
