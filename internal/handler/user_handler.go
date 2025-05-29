@@ -101,7 +101,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	}
 
 	userObj := user.(domain.User)
-	publicURL, err := h.userUsecase.UploadAvatar(c.Request.Context(), &userObj, fileHeader)
+	result, err := h.userUsecase.UploadAvatar(c.Request.Context(), &userObj, fileHeader)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -109,9 +109,28 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "File uploaded successfully",
-		"data": gin.H{
-			"url": publicURL,
-		},
+		"data":    result,
 	})
+}
 
+func (h *UserHandler) UpdateUserPassword(c *gin.Context) {
+	updateUserPassword := domain.UpdateUserPassword{}
+	if err := c.ShouldBindJSON(&updateUserPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	user, isExist := c.Get("user")
+	if !isExist {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		return
+	}
+	userObj := user.(domain.User)
+	err := h.userUsecase.UpdateUserPassword(userObj, updateUserPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "user update password successfully",
+	})
 }

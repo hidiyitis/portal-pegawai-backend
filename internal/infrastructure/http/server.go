@@ -61,6 +61,7 @@ func StartServer() {
 	v1.POST("/auth/login", userHandler.LoginUser)
 	v1.GET("/users/:nip", utils.AuthMiddleware(), userHandler.GetUserByNIP)
 	v1.PUT("/users/upload-avatar", utils.AuthMiddleware(), userHandler.UploadAvatar)
+	v1.PUT("/users/update-password", utils.AuthMiddleware(), userHandler.UpdateUserPassword)
 
 	v1.POST("/agendas", utils.AuthMiddleware(), agendaHandler.CreateAgenda)
 	v1.GET("/agendas/:id", utils.AuthMiddleware(), agendaHandler.GetAgendaByID)

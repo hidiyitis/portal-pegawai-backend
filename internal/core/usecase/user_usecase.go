@@ -14,7 +14,8 @@ type UserUsecase interface {
 	GetUserByNIP(nip uint) (*domain.User, error)
 	UpdateUser(user *domain.User) error
 	LoginUser(user *domain.User) (string, string, string, error)
-	UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (string, error)
+	UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (*domain.User, error)
+	UpdateUserPassword(user domain.User, payload domain.UpdateUserPassword) error
 }
 
 type userUsecase struct {
@@ -22,7 +23,11 @@ type userUsecase struct {
 	service *service.UserService
 }
 
-func (u *userUsecase) UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (string, error) {
+func (u *userUsecase) UpdateUserPassword(user domain.User, payload domain.UpdateUserPassword) error {
+	return u.service.UpdatePasswordUser(user, payload)
+}
+
+func (u *userUsecase) UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (*domain.User, error) {
 	return u.service.UploadAvatar(ctx, user, fileHeader)
 }
 

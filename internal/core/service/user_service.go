@@ -94,21 +94,21 @@ func (s *UserService) LoginUser(user *domain.User) (string, string, string, erro
 	return token, refreshToken, expiredAt, nil
 }
 
-func (s *UserService) UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (string, error) {
+func (s *UserService) UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (*domain.User, error) {
 	if fileHeader == nil {
-		return "", fmt.Errorf("fileHeader is nil")
+		return nil, fmt.Errorf("fileHeader is nil")
 	}
 	user, err := s.repo.FindByNIP(user.NIP)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if err := validateFile(true, fileHeader); err != nil {
-		return "", fmt.Errorf("file validation failed: %w", err)
+		return nil, fmt.Errorf("file validation failed: %w", err)
 	}
 
 	file, err := fileHeader.Open()
 	if err != nil {
-		return "", fmt.Errorf("failed to open file: %w", err)
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer func(file multipart.File) {
 		err := file.Close()
@@ -124,17 +124,41 @@ func (s *UserService) UploadAvatar(ctx context.Context, user *domain.User, fileH
 		fileHeader.Filename,
 	)
 	if err != nil {
-		return "", fmt.Errorf("upload failed: %w", err)
+		return nil, fmt.Errorf("upload failed: %w", err)
 	}
 
 	user.PhotoUrl = publicURL
 
 	err = s.repo.Update(user)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return publicURL, nil
+	return user, nil
+}
+
+func (s *UserService) UpdatePasswordUser(user domain.User, payload domain.UpdateUserPassword) error {
+	findUser, err := s.repo.FindByNIP(user.NIP)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(findUser.Password), []byte(payload.CurrentPassword))
+	if err != nil {
+		return errors.New("password does not match")
+	}
+	if payload.NewPassword != payload.ConfirmPassword {
+		return errors.New("new password does not match")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.NewPassword), bcrypt.DefaultCost)
+	findUser.Password = string(hashedPassword)
+
+	err = s.repo.Update(findUser)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func validateFile(isImage bool, fileHeader *multipart.FileHeader) error {

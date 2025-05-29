@@ -15,3 +15,9 @@ type User struct {
 	CreatedAt    time.Time  `json:"created_at" gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"default:CURRENT_TIMESTAMP"`
 }
+
+type UpdateUserPassword struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
