@@ -59,6 +59,7 @@ func StartServer() {
 
 	v1.POST("/users", userHandler.CreateUser)
 	v1.POST("/auth/login", userHandler.LoginUser)
+	v1.GET("/users/", utils.AuthMiddleware(), userHandler.GetUsersExclude)
 	v1.GET("/users/:nip", utils.AuthMiddleware(), userHandler.GetUserByNIP)
 	v1.PUT("/users/upload-avatar", utils.AuthMiddleware(), userHandler.UploadAvatar)
 	v1.PUT("/users/update-password", utils.AuthMiddleware(), userHandler.UpdateUserPassword)
