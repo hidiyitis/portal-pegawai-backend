@@ -73,6 +73,7 @@ func (s *LeaveRequestService) CreateLeaveRequest(ctx context.Context, user domai
 		UserNIP:       user.NIP,
 		EndDate:       endDate,
 		Description:   leaveRequest.Description,
+		FileName:      fileHeader.Filename,
 		AttachmentUrl: publicURL,
 	}
 	result, err := s.repo.CreateLeaveRequest(request)
@@ -104,7 +105,7 @@ func (s *LeaveRequestService) UpdateLeaveRequest(id uint, user domain.User, leav
 		}
 
 		totalLeave := calculateDaysBetween(leaveRequest.StartDate, leaveRequest.EndDate) - int(totalHoliday)
-		if user.LeaveQuota < totalLeave {
+		if userLeave.LeaveQuota < totalLeave {
 			leaveRequest.Status = constants.REJECTED
 			_, err := s.repo.UpdateLeaveRequest(id, leaveRequest)
 			if err != nil {
