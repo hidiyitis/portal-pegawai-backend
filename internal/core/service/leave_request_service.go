@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mime/multipart"
+	"time"
+
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"github.com/hidiyitis/portal-pegawai/internal/infrastructure/storage"
 	"github.com/hidiyitis/portal-pegawai/internal/repository"
 	"github.com/hidiyitis/portal-pegawai/pkg/utils/constants"
-	"mime/multipart"
-	"time"
 )
 
 type LeaveRequestService struct {
@@ -84,50 +85,115 @@ func (s *LeaveRequestService) CreateLeaveRequest(ctx context.Context, user domai
 }
 
 func (s *LeaveRequestService) UpdateLeaveRequest(id uint, user domain.User, leaveRequest *domain.LeaveRequest) (*domain.LeaveRequest, error) {
+	// Ambil data existing terlebih dahulu
+	existingLeaveRequest, err := s.repo.GetLeaveRequestByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("leave request not found: %w", err)
+	}
+
+	// Validasi status
 	isValidStatus := isValidLeaveRequestStatus(leaveRequest.Status)
 	if !isValidStatus {
 		return nil, fmt.Errorf("invalid leave request status: %s", leaveRequest.Status)
 	}
 
-	if (leaveRequest.Status == constants.COMPLETED || leaveRequest.Status == constants.REJECTED) && user.NIP != leaveRequest.ManagerNIP {
+	// Cek permission
+	if (leaveRequest.Status == constants.COMPLETED || leaveRequest.Status == constants.REJECTED) &&
+		user.NIP != existingLeaveRequest.ManagerNIP {
 		return nil, fmt.Errorf("invalid leave request access role status: %s", leaveRequest.Status)
 	}
 
+	// Update status
+	existingLeaveRequest.Status = leaveRequest.Status
+
+	// LOGIKA ENHANCED: Jika status COMPLETED, hitung dengan precision tinggi
 	if leaveRequest.Status == constants.COMPLETED {
-		totalHoliday, err := s.holidayRepo.CountHoliday(leaveRequest.StartDate, leaveRequest.EndDate)
+		// Hitung working days yang akan dipotong dari kuota
+		workingDays, err := s.calculateActualWorkingDays(existingLeaveRequest.StartDate, existingLeaveRequest.EndDate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate working days: %w", err)
+		}
+
+		userLeave, err := s.userRepo.FindByNIP(existingLeaveRequest.UserNIP)
 		if err != nil {
 			return nil, err
 		}
 
-		userLeave, err := s.userRepo.FindByNIP(leaveRequest.UserNIP)
-		if err != nil {
-			return nil, err
-		}
-
-		totalLeave := calculateDaysBetween(leaveRequest.StartDate, leaveRequest.EndDate) - int(totalHoliday)
-		if userLeave.LeaveQuota < totalLeave {
-			leaveRequest.Status = constants.REJECTED
-			_, err := s.repo.UpdateLeaveRequest(id, leaveRequest)
+		// Cek apakah kuota mencukupi
+		if userLeave.LeaveQuota < workingDays {
+			existingLeaveRequest.Status = constants.REJECTED
+			_, err := s.repo.UpdateLeaveRequest(id, existingLeaveRequest)
 			if err != nil {
 				return nil, err
 			}
-
-			return nil, errors.New("rejected user has no leave quota")
+			return nil, fmt.Errorf("rejected: insufficient leave quota. Required: %d days, Available: %d days", workingDays, userLeave.LeaveQuota)
 		}
 
-		userLeave.LeaveQuota -= totalLeave
+		// Kurangi kuota dengan jumlah working days yang tepat
+		userLeave.LeaveQuota -= workingDays
 		err = s.userRepo.Update(userLeave)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	result, err := s.repo.UpdateLeaveRequest(id, leaveRequest)
+	// Update leave request
+	result, err := s.repo.UpdateLeaveRequest(id, existingLeaveRequest)
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+func (s *LeaveRequestService) calculateActualWorkingDays(startDate time.Time, endDate time.Time) (int, error) {
+	if startDate.After(endDate) {
+		return 0, fmt.Errorf("start date cannot be after end date")
+	}
+
+	// Normalize dates ke midnight untuk consistency
+	start := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, time.UTC)
+	end := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, time.UTC)
+
+	workingDays := 0
+	current := start
+
+	// Ambil daftar holidays dalam range untuk debugging dan verification
+	holidays, err := s.holidayRepo.GetHolidaysInRange(start, end)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get holidays: %w", err)
+	}
+
+	// Convert holidays ke map untuk O(1) lookup performance
+	holidayMap := make(map[string]bool)
+	for _, holiday := range holidays {
+		holidayKey := holiday.Date.Format("2006-01-02")
+		holidayMap[holidayKey] = true
+	}
+
+	// Loop setiap hari dari start sampai end (inclusive)
+	for current.Before(end) || current.Equal(end) {
+		currentKey := current.Format("2006-01-02")
+
+		// LOGIKA KUNCI: Skip weekend (Saturday = 6, Sunday = 0)
+		isWeekend := current.Weekday() == time.Saturday || current.Weekday() == time.Sunday
+
+		// LOGIKA KUNCI: Skip holidays (termasuk yang jatuh pada start/end date)
+		isHoliday := holidayMap[currentKey]
+
+		// Hanya hitung sebagai working day jika bukan weekend dan bukan holiday
+		if !isWeekend && !isHoliday {
+			workingDays++
+		}
+
+		// Debug logging untuk transparency (bisa dihapus di production)
+		fmt.Printf("Date: %s, Weekend: %t, Holiday: %t, Counted: %t\n",
+			currentKey, isWeekend, isHoliday, !isWeekend && !isHoliday)
+
+		// Move to next day
+		current = current.AddDate(0, 0, 1)
+	}
+
+	return workingDays, nil
 }
 
 func (s *LeaveRequestService) GetLeaveRequestDashboard(nip uint) (*domain.LeaveRequestDashboard, error) {
