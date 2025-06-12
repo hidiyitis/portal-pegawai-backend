@@ -9,6 +9,7 @@ import (
 type UserRepository interface {
 	Create(user *domain.User) error
 	FindAll() ([]domain.User, error)
+	FindAllExclude(nip uint) ([]domain.User, error)
 	FindByNIP(nip uint) (*domain.User, error)
 	Update(user *domain.User) error
 	FindLast(departmentId uint) (*domain.User, error)
@@ -25,6 +26,16 @@ func (u userRepository) Create(user *domain.User) error {
 func (u userRepository) FindAll() ([]domain.User, error) {
 	var users []domain.User
 	err := u.db.Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (u userRepository) FindAllExclude(nip uint) ([]domain.User, error) {
+	var users []domain.User
+	err := u.db.Where("nip != ?", nip).Find(&users).Error
+	print(users)
 	if err != nil {
 		return nil, err
 	}

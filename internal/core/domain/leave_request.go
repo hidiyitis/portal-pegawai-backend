@@ -13,6 +13,7 @@ type LeaveRequest struct {
 	ManagerNIP    uint      `json:"manager_nip" gorm:"column:manager_nip; not null"`
 	StartDate     time.Time `json:"start_date" gorm:"column:start_date; not null"`
 	EndDate       time.Time `json:"end_date" gorm:"column:end_date; not null"`
+	FileName      string    `json:"file_name" gorm:"column:file_name; not null"`
 	AttachmentUrl string    `json:"attachment_url" gorm:"column:attachment_url;"`
 	Description   string    `json:"description" gorm:"column:description;"`
 	Status        Status    `json:"status" gorm:"column:status; default:'IN_PROGRESS';"`

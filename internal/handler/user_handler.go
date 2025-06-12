@@ -147,3 +147,20 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		"message": "all users retrieved successfully",
 	})
 }
+
+func (h *UserHandler) GetUsersExclude(c *gin.Context) {
+	user, isExist := c.Get("user")
+	if !isExist {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		return
+	}
+	userObj := user.(domain.User)
+	result, err := h.userUsecase.GetUsersExclude(userObj.NIP)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"data":    result,
+		"message": "success get users",
+	})
+}

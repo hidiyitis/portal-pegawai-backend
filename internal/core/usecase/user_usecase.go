@@ -11,6 +11,7 @@ import (
 type UserUsecase interface {
 	CreateUser(user *domain.User) error
 	GetUsers() ([]domain.User, error)
+	GetUsersExclude(nip uint) ([]domain.User, error)
 	GetUserByNIP(nip uint) (*domain.User, error)
 	UpdateUser(user *domain.User) error
 	LoginUser(user *domain.User) (string, string, string, error)
@@ -44,6 +45,11 @@ func (u *userUsecase) GetUserByNIP(nip uint) (*domain.User, error) {
 // GetUsers implements UserUsecase.
 func (u *userUsecase) GetUsers() ([]domain.User, error) {
 	return u.repo.FindAll()
+}
+
+func (u *userUsecase) GetUsersExclude(nip uint) ([]domain.User, error) {
+	print(nip)
+	return u.repo.FindAllExclude(nip)
 }
 
 // UpdateUser implements UserUsecase.
