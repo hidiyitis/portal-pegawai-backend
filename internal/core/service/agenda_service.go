@@ -1,9 +1,10 @@
 package service
 
 import (
+	"time"
+
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"github.com/hidiyitis/portal-pegawai/internal/repository"
-	"time"
 )
 
 type AgendaService struct {

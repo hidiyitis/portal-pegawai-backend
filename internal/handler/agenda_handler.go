@@ -2,13 +2,14 @@ package handler
 
 import (
 	"errors"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"github.com/hidiyitis/portal-pegawai/internal/core/usecase"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type AgendaHandler struct {
@@ -115,5 +116,18 @@ func (h *AgendaHandler) GetAgendaByDate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"data":    result,
 		"message": "agenda found successfully",
+	})
+}
+
+func (h *AgendaHandler) GetAllAgendas(c *gin.Context) {
+	result, err := h.agendaUsecase.GetAllAgendas()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    result,
+		"message": "all agendas retrieved successfully",
 	})
 }
