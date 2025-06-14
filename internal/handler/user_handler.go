@@ -146,6 +146,7 @@ func (h *UserHandler) GetUsersExclude(c *gin.Context) {
 	result, err := h.userUsecase.GetUsersExclude(userObj.NIP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"data":    result,
