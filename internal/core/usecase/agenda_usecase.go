@@ -1,10 +1,11 @@
 package usecase
 
 import (
+	"time"
+
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"github.com/hidiyitis/portal-pegawai/internal/core/service"
 	"github.com/hidiyitis/portal-pegawai/internal/repository"
-	"time"
 )
 
 type AgendaUsecase interface {
@@ -13,6 +14,7 @@ type AgendaUsecase interface {
 	UpdateAgenda(id uint, agenda *domain.InputAgendaRequest) (*domain.Agenda, error)
 	DeleteAgenda(id uint) error
 	GetAgendaByDate(nip uint, date time.Time) ([]domain.Agenda, error)
+	GetAllAgendas() ([]domain.Agenda, error)
 }
 
 type agendaUsecase struct {
@@ -45,4 +47,8 @@ func NewAgendaUsecase(repo repository.AgendaRepository, service *service.AgendaS
 		repo,
 		service,
 	}
+}
+
+func (u agendaUsecase) GetAllAgendas() ([]domain.Agenda, error) {
+	return u.repo.GetAllAgendas()
 }

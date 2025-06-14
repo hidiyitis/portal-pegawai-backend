@@ -3,10 +3,11 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/hidiyitis/portal-pegawai/internal/infrastructure/storage"
-	"github.com/hidiyitis/portal-pegawai/pkg/utils"
 	"net/http"
 	"os"
+
+	"github.com/hidiyitis/portal-pegawai/internal/infrastructure/storage"
+	"github.com/hidiyitis/portal-pegawai/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hidiyitis/portal-pegawai/internal/core/service"
@@ -58,6 +59,7 @@ func StartServer() {
 	v1 := r.Group("/api/v1")
 
 	v1.POST("/users", userHandler.CreateUser)
+	v1.GET("/users", utils.AuthMiddleware(), userHandler.GetUsers)
 	v1.POST("/auth/login", userHandler.LoginUser)
 	v1.GET("/users/", utils.AuthMiddleware(), userHandler.GetUsersExclude)
 	v1.GET("/users/:nip", utils.AuthMiddleware(), userHandler.GetUserByNIP)
@@ -69,6 +71,7 @@ func StartServer() {
 	v1.PUT("/agendas/:id", utils.AuthMiddleware(), agendaHandler.UpdateAgenda)
 	v1.GET("/agendas", utils.AuthMiddleware(), agendaHandler.GetAgendaByDate)
 	v1.DELETE("/agendas/:id", utils.AuthMiddleware(), agendaHandler.DeleteAgendaByID)
+	v1.GET("/agendas/all", utils.AuthMiddleware(), agendaHandler.GetAllAgendas)
 
 	v1.POST("/leave-request", utils.AuthMiddleware(), leaveRequestHandler.CreateLeaveRequest)
 	v1.GET("/leave-request", utils.AuthMiddleware(), leaveRequestHandler.GetLeaveRequest)

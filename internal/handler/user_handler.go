@@ -136,6 +136,19 @@ func (h *UserHandler) UpdateUserPassword(c *gin.Context) {
 	})
 }
 
+func (h *UserHandler) GetUsers(c *gin.Context) {
+	users, err := h.userUsecase.GetUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    users,
+		"message": "all users retrieved successfully",
+	})
+}
+
 func (h *UserHandler) GetUsersExclude(c *gin.Context) {
 	user, isExist := c.Get("user")
 	if !isExist {

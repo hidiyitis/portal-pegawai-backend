@@ -2,9 +2,10 @@ package repository
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/hidiyitis/portal-pegawai/internal/core/domain"
 	"gorm.io/gorm"
-	"time"
 )
 
 type AgendaRepository interface {
@@ -13,6 +14,7 @@ type AgendaRepository interface {
 	UpdateAgenda(agenda *domain.Agenda, participants []uint) (*domain.Agenda, error)
 	GetAgendaByDate(nip uint, date time.Time) ([]domain.Agenda, error)
 	DeleteAgenda(id uint) error
+	GetAllAgendas() ([]domain.Agenda, error)
 }
 
 type agendaRepository struct {
@@ -126,4 +128,17 @@ func NewAgendaRepository(db *gorm.DB) AgendaRepository {
 	return &agendaRepository{
 		db: db,
 	}
+}
+
+func (a agendaRepository) GetAllAgendas() ([]domain.Agenda, error) {
+	var agendas []domain.Agenda
+	err := a.db.
+		Preload("Participants").
+		Preload("Creator").
+		Order("date ASC").
+		Find(&agendas).Error
+	if err != nil {
+		return nil, err
+	}
+	return agendas, nil
 }
