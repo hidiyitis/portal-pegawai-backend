@@ -14,7 +14,7 @@ type AgendaRepository interface {
 	UpdateAgenda(agenda *domain.Agenda, participants []uint) (*domain.Agenda, error)
 	GetAgendaByDate(nip uint, date time.Time) ([]domain.Agenda, error)
 	DeleteAgenda(id uint) error
-	GetAllAgendas() ([]domain.Agenda, error)
+	GetAllAgendas(nip uint) ([]domain.Agenda, error)
 }
 
 type agendaRepository struct {
@@ -130,13 +130,14 @@ func NewAgendaRepository(db *gorm.DB) AgendaRepository {
 	}
 }
 
-func (a agendaRepository) GetAllAgendas() ([]domain.Agenda, error) {
+func (a agendaRepository) GetAllAgendas(nip uint) ([]domain.Agenda, error) {
 	var agendas []domain.Agenda
 	err := a.db.
 		Preload("Participants").
 		Preload("Creator").
+		Joins("JOIN participants ON participants.agenda_id = agendas.agenda_id").
 		Order("date ASC").
-		Find(&agendas).Error
+		Where("participants.user_n_ip = ?", nip).Find(&agendas).Error
 	if err != nil {
 		return nil, err
 	}

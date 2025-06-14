@@ -124,7 +124,13 @@ func (h *AgendaHandler) GetAgendaByDate(c *gin.Context) {
 }
 
 func (h *AgendaHandler) GetAllAgendas(c *gin.Context) {
-	result, err := h.agendaUsecase.GetAllAgendas()
+	user, isExist := c.Get("user")
+	if !isExist {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		return
+	}
+	userObj := user.(domain.User)
+	result, err := h.agendaUsecase.GetAllAgendas(userObj.NIP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return

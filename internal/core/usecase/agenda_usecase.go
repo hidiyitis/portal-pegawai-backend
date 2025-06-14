@@ -14,7 +14,7 @@ type AgendaUsecase interface {
 	UpdateAgenda(id uint, agenda *domain.InputAgendaRequest) (*domain.Agenda, error)
 	DeleteAgenda(id uint) error
 	GetAgendaByDate(nip uint, date time.Time) ([]domain.Agenda, error)
-	GetAllAgendas() ([]domain.Agenda, error)
+	GetAllAgendas(nip uint) ([]domain.Agenda, error)
 }
 
 type agendaUsecase struct {
@@ -49,6 +49,6 @@ func NewAgendaUsecase(repo repository.AgendaRepository, service *service.AgendaS
 	}
 }
 
-func (u agendaUsecase) GetAllAgendas() ([]domain.Agenda, error) {
-	return u.repo.GetAllAgendas()
+func (u agendaUsecase) GetAllAgendas(nip uint) ([]domain.Agenda, error) {
+	return u.repo.GetAllAgendas(nip)
 }
