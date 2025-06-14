@@ -88,6 +88,7 @@ func (s *LeaveRequestService) UpdateLeaveRequest(id uint, user domain.User, leav
 	if !isValidStatus {
 		return nil, fmt.Errorf("invalid leave request status: %s", leaveRequest.Status)
 	}
+	print(user.NIP)
 
 	if (leaveRequest.Status == constants.COMPLETED || leaveRequest.Status == constants.REJECTED) && user.NIP != leaveRequest.ManagerNIP {
 		return nil, fmt.Errorf("invalid leave request access role status: %s", leaveRequest.Status)

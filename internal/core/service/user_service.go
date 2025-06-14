@@ -137,18 +137,18 @@ func (s *UserService) UploadAvatar(ctx context.Context, user *domain.User, fileH
 	return user, nil
 }
 
-func (s *UserService) UpdatePasswordUser(user domain.User, payload domain.UpdateUserPassword) error {
+func (s *UserService) UpdatePasswordUser(user domain.User, payload domain.UpdateUserPassword) (*domain.User, error) {
 	findUser, err := s.repo.FindByNIP(user.NIP)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(findUser.Password), []byte(payload.CurrentPassword))
 	if err != nil {
-		return errors.New("password does not match")
+		return nil, errors.New("password does not match")
 	}
 	if payload.NewPassword != payload.ConfirmPassword {
-		return errors.New("new password does not match")
+		return nil, errors.New("new password does not match")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.NewPassword), bcrypt.DefaultCost)
@@ -156,9 +156,9 @@ func (s *UserService) UpdatePasswordUser(user domain.User, payload domain.Update
 
 	err = s.repo.Update(findUser)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return findUser, nil
 }
 
 func validateFile(isImage bool, fileHeader *multipart.FileHeader) error {

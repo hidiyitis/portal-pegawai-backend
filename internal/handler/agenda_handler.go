@@ -100,18 +100,22 @@ func (h *AgendaHandler) DeleteAgendaByID(c *gin.Context) {
 }
 
 func (h *AgendaHandler) GetAgendaByDate(c *gin.Context) {
-	nip := 10012500002
 	date := c.Query("date")
 	if date == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "date is required"})
 		return
+	}
+	user, ok := c.Get("user")
+	nip := user.(domain.User).NIP
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
 	}
 	parseDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	result, _ := h.agendaUsecase.GetAgendaByDate(uint(nip), parseDate)
+	result, _ := h.agendaUsecase.GetAgendaByDate(nip, parseDate)
 	c.JSON(http.StatusOK, gin.H{
 		"data":    result,
 		"message": "agenda found successfully",

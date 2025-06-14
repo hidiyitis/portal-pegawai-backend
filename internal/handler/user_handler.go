@@ -125,12 +125,13 @@ func (h *UserHandler) UpdateUserPassword(c *gin.Context) {
 		return
 	}
 	userObj := user.(domain.User)
-	err := h.userUsecase.UpdateUserPassword(userObj, updateUserPassword)
+	user, err := h.userUsecase.UpdateUserPassword(userObj, updateUserPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
+		"data":    user,
 		"message": "user update password successfully",
 	})
 }

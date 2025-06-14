@@ -16,7 +16,7 @@ type UserUsecase interface {
 	UpdateUser(user *domain.User) error
 	LoginUser(user *domain.User) (string, string, string, error)
 	UploadAvatar(ctx context.Context, user *domain.User, fileHeader *multipart.FileHeader) (*domain.User, error)
-	UpdateUserPassword(user domain.User, payload domain.UpdateUserPassword) error
+	UpdateUserPassword(user domain.User, payload domain.UpdateUserPassword) (*domain.User, error)
 }
 
 type userUsecase struct {
@@ -24,7 +24,7 @@ type userUsecase struct {
 	service *service.UserService
 }
 
-func (u *userUsecase) UpdateUserPassword(user domain.User, payload domain.UpdateUserPassword) error {
+func (u *userUsecase) UpdateUserPassword(user domain.User, payload domain.UpdateUserPassword) (*domain.User, error) {
 	return u.service.UpdatePasswordUser(user, payload)
 }
 
