@@ -78,6 +78,7 @@ func StartServer() {
 	v1.GET("/dashboard-leave-request", utils.AuthMiddleware(), leaveRequestHandler.GetDashboardLeaveRequest)
 	v1.PUT("/leave-request/:id", utils.AuthMiddleware(), leaveRequestHandler.UpdateLeaveRequest)
 
-	v1.POST("/attandance", utils.AuthMiddleware(), attendanceHandler.CreateAttendance)
+	v1.POST("/attendance", utils.AuthMiddleware(), attendanceHandler.CreateAttendance)
+	v1.GET("/attendance/last", utils.AuthMiddleware(), attendanceHandler.GetLastAttendance)
 	r.Run(fmt.Sprintf(":%v", PORT))
 }

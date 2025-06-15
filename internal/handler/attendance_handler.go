@@ -48,3 +48,22 @@ func (h *AttendanceHandler) CreateAttendance(c *gin.Context) {
 			"message": "attendance created successfully",
 		})
 }
+
+func (h *AttendanceHandler) GetLastAttendance(c *gin.Context) {
+	user, isExist := c.Get("user")
+	if !isExist {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		return
+	}
+	userObj := user.(domain.User)
+	result, err := h.attendanceUsecase.GetLastAttendance(userObj.NIP)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    result,
+		"message": "all agendas retrieved successfully",
+	})
+}
