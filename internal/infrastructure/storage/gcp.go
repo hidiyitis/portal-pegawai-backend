@@ -3,7 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
+	"golang.org/x/oauth2/google"
 	"io"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -19,23 +21,35 @@ type gcpStorageImpl struct {
 	client *storage.Client
 }
 
-func NewGCPStorage(ctx context.Context, credentialsJSON string) (GCPStorage, error) {
-	var client *storage.Client
-	var err error
+func NewGCPStorage(ctx context.Context) (GCPStorage, error) {
 
-	if credentialsJSON != "" {
-		client, err = storage.NewClient(ctx, option.WithCredentialsFile(credentialsJSON))
-	} else {
-		client, err = storage.NewClient(ctx, option.WithCredentialsFile("storage-service-account.json"))
+	client, err := storage.NewClient(ctx)
+	if err == nil {
+		return &gcpStorageImpl{client: client}, nil
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to create GCP storage client: %w", err)
+	const credsFile = "storage-service-account.json"
+	if _, err := os.Stat(credsFile); err == nil {
+		client, err := storage.NewClient(ctx, option.WithCredentialsFile(credsFile))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GCP storage client with file: %w", err)
+		}
+		return &gcpStorageImpl{client: client}, nil
 	}
 
-	return &gcpStorageImpl{
-		client: client,
-	}, nil
+	if jsonCreds := os.Getenv("GOOGLE_CREDENTIALS_JSON"); jsonCreds != "" {
+		creds, err := google.CredentialsFromJSON(ctx, []byte(jsonCreds), storage.ScopeReadWrite)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse credentials from env: %w", err)
+		}
+		client, err := storage.NewClient(ctx, option.WithCredentials(creds))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GCP storage client with env creds: %w", err)
+		}
+		return &gcpStorageImpl{client: client}, nil
+	}
+
+	return nil, fmt.Errorf("no valid Google Cloud credentials found")
 }
 
 func (g *gcpStorageImpl) UploadFile(

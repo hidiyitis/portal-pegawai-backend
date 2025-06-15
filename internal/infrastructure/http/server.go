@@ -21,7 +21,7 @@ func StartServer() {
 
 	ctx := context.Background()
 	db := database.NewDB()
-	gcpStorage, err := storage.NewGCPStorage(ctx, "")
+	gcpStorage, err := storage.NewGCPStorage(ctx)
 	if err != nil {
 		panic(err)
 	}
